@@ -1,3 +1,5 @@
+from typing import Literal
+
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -7,11 +9,13 @@ from sklearn.metrics import silhouette_samples
 class KMeansClustering:
     def __init__(
         self,
-        distance_metric="euclidean",
+        distance_metric: Literal["euclidean", "precomputed"] = "euclidean",
     ):
         self.distance_metric = distance_metric
         if distance_metric == "euclidean":
             self.distance_func = lambda corr: np.sqrt(0.5 * (1 - corr.fillna(0)))
+        elif distance_metric == "precomputed":
+            self.distance_func = lambda corr: corr.fillna(0)
         else:
             raise NotImplementedError(
                 f"Distance metric {distance_metric} is not implemented."
@@ -30,7 +34,9 @@ class KMeansClustering:
             for i in range(2, max_num_clusters + 1):
                 kmeans = KMeans(n_clusters=i, n_init=1).fit(x)
                 sil = silhouette_samples(x, kmeans.labels_)
-                cluster_quality = sil.mean() / sil.std()  # cluster score
+                cluster_quality = (
+                    sil.mean() / sil.std() if sil.std() != 0 else 0
+                )  # cluster score
                 if (
                     best_cluster_quality is None
                     or best_cluster_quality < cluster_quality
